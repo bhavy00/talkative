@@ -21,6 +21,10 @@ const postsSchema = mongoose.Schema({
     type: mongoose.Schema.Types.Array,
     default: [],
   },
+  likes: {
+    type: Number,
+    default: 0
+  }
 });
 
 const Posts = mongoose.model("Posts", postsSchema);
