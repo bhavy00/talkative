@@ -58,18 +58,27 @@ const deletePost = async (req, res) => {
 /*********** Get Trending Posts **************/
 const getTrendPosts = async (req, res) => {
   try {
-    const trendPosts = await Posts.find();
+    let trendPosts = Posts.find();
+
+    // sorting posts with dates
+    trendPosts = trendPosts.sort();
+    
+    // soritng new posts for no of comments and likes
+    trendPosts = trendPosts.sort('comments likes');
+
+    const resultPosts = await trendPosts;
+
     res.status(200).json({
       status: "success",
-      results: trendPosts.length,
+      results: resultPosts.length,
       data: {
-        trendPosts,
+        resultPosts,
       },
     });
   } catch (err) {
     res.status(400).json({
       status: "failed",
-      mas: err,
+      msg: err,
     });
   }
 };
@@ -89,7 +98,7 @@ const getUserPosts = async (req, res) => {
   } catch (err) {
     res.status(400).json({
       status: "failed",
-      mas: err,
+      msg: err,
     });
   }
 };
@@ -108,7 +117,66 @@ const getPost = async (req, res) => {
   } catch (err) {
     res.status(400).json({
       status: "failed",
-      mas: err,
+      msg: err,
+    });
+  }
+};
+
+/*********** Get Search Post **************/
+const getSearchPost = async (req, res) => {
+  try {
+    // Build Query
+    // 1. Filtering
+    const queryObj = { ...req.query };
+    const excludeFields = ['page', 'sort', 'limit', 'fields'];
+    excludeFields.forEach(el=> delete queryObj[el]);
+
+    // 2. Advance filtering 
+    let queryStr = JSON.stringify(queryObj);
+    queryStr = queryStr.replace(/\b(gte|gt|lte|lt)\b/g, match => `$${match}`);
+
+    let query = Posts.find(JSON.parse(queryStr));
+    
+    // 3. Sorting 
+    if (req.query.sort){
+      const sortBy = req.query.sort.split(',').join(' ');
+      query = query.sort(sortBy)
+    } else {
+      query = query.sort('-date')
+    }
+
+    // 4. Field limiting 
+    if (req.query.fields){
+      const fields = req.query.fields.split(',').join(' ');
+      query = query.select(fields);
+    } else {
+      query = query.select('-__v')
+    }
+
+    // Pagination 
+    const page = req.query.page*1||1;
+    const limit = req.query.limit*1||100;
+    const skip = (page-1)*limit;
+
+    query = query.skip(skip).limit(limit);
+
+    if (req.query.page) {
+      const numPosts = await Posts.countDocuments()
+      if (skip >= numPosts) throw new Error('This page does not exist')
+    }
+    
+    // Execute query
+    const post = await query 
+    res.status(200).json({
+      status: "success",
+      data: {
+        post,
+      },
+    });
+  } catch (err) {
+    res.status(400).json({
+      status: "failed",
+      msg: err,
     });
   }
 };
@@ -120,4 +188,5 @@ module.exports = {
   getTrendPosts,
   getUserPosts,
   getPost,
+  getSearchPost,
 };
