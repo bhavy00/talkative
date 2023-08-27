@@ -1,0 +1,11 @@
+.sidebar-links{
+    text-decoration: none;
+    color: black;
+}
+
+.sidebar-list{
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}

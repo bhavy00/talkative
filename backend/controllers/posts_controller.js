@@ -9,7 +9,7 @@ const createPost = async (req, res) => {
     const newPost = await Posts.create(req.body);
     res.status(201).json({
       status: "success",
-      msg: newUser,
+      msg: newPost,
     });
   } catch (err) {
     res.status(400).json({
