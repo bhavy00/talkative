@@ -20,3 +20,5 @@ router
     .route('/user/:user_id')
     .get(postsController.getUserPosts)
     .post(postsController.createPost)
+
+module.exports = router;

@@ -2,69 +2,56 @@
 const Posts = require("../models/postsModel");
 
 // import other functions and classes
-const APIFeature = require("../utils/apiFeature")
+const catchAsync = require("../utils/catchAsync")
+const APIFeature = require("../utils/apiFeature");
+const AppError = require("../utils/appError");
+
 
 /******************** API Functions *********************/
 
 /********** Create Post **************/
-const createPost = async (req, res) => {
-  try {
-    const {user_id} = req.params;
-    const newPost = await Posts.create({
-      user: user_id,
-      ...req.body
-    });
-    res.status(201).json({
-      status: "success",
-      msg: newPost,
-    });
-  } catch (err) {
-    res.status(400).json({
-      status: "failed",
-      msg: err,
-    });
-  }
-};
+const createPost = catchAsync(async (req, res, next) => {
+  const {user_id} = req.params;
+  const newPost = await Posts.create({
+    user: user_id,
+    ...req.body
+  });
+  res.status(201).json({
+    status: "success",
+    msg: newPost,
+  });
+});
 
 /*********** Update Post ************/
-const updatePost = async (req, res) => {
-  try {
+const updatePost = catchAsync(async (req, res, next) => {
     const { post_id } = req.params;
     const post = await Posts.findByIdAndUpdate(post_id, req.body, {
       new: true,
       runValidators: true,
     });
+    if (!post){
+      return next(new AppError("No post found with that ID", 404));
+    }
     res.status(204).json({
       status: "success",
       data: { post },
     });
-  } catch (error) {
-    res.status(404).json({
-      status: "failed",
-      msg: error,
-    });
-  }
-};
+});
 
 /*********** Delete Post ************/
-const deletePost = async (req, res) => {
-  try {
+const deletePost = catchAsync(async (req, res, next) => {
     const { post_id } = req.params;
-    await Posts.findByIdAndDelete(post_id);
+    const post = await Posts.findByIdAndDelete(post_id);
+    if (!post){
+      return next(new AppError("No post found with that ID", 404));
+    }
     res.status(204).json({
       status: "success",
     });
-  } catch (error) {
-    res.status(404).json({
-      status: "failed",
-      msg: error,
-    });
-  }
-};
+});
 
 /*********** Get Trending Posts **************/
-const getTrendPosts = async (req, res) => {
-  try {
+const getTrendPosts = catchAsync(async (req, res, next) => {
     let trendPosts = Posts.find();
 
     // sorting posts with dates
@@ -83,17 +70,10 @@ const getTrendPosts = async (req, res) => {
         resultPosts,
       },
     });
-  } catch (err) {
-    res.status(400).json({
-      status: "failed",
-      msg: err,
-    });
-  }
-};
+});
 
 /*********** Get User Posts **************/
-const getUserPosts = async (req, res) => {
-  try {
+const getUserPosts = catchAsync(async (req, res, next) => {
     const { user_id } = req.params;
     // find user by id in database
     const userPosts = await Posts.find({ user: user_id });
@@ -105,17 +85,10 @@ const getUserPosts = async (req, res) => {
         userPosts,
       },
     });
-  } catch (err) {
-    res.status(400).json({
-      status: "failed",
-      msg: err,
-    });
-  }
-};
+});
 
 /*********** Get Post **************/
-const getPost = async (req, res) => {
-  try {
+const getPost = catchAsync(async (req, res, next) => {
     const { post_id } = req.params;
     // Find post by id in the database
     const post = await Posts.findById(post_id);
@@ -126,17 +99,10 @@ const getPost = async (req, res) => {
         post,
       },
     });
-  } catch (err) {
-    res.status(400).json({
-      status: "failed",
-      msg: err,
-    });
-  }
-};
+});
 
 /*********** Get Search Post **************/
-const getSearchPost = async (req, res) => {
-  try {    
+const getSearchPost = catchAsync(async (req, res, next) => { 
     // Execute query
     const features = new APIFeature(Posts.find(), req.query)
       .filter()
@@ -153,17 +119,10 @@ const getSearchPost = async (req, res) => {
         posts,
       },
     });
-  } catch (err) {
-    res.status(400).json({
-      status: "failed",
-      msg: err,
-    });
-  }
-};
+});
 
 /*********** Aggregation Pipeline **************/
-const getPostsStats = async (req, res) => {
-  try {
+const getPostsStats = catchAsync(async (req, res, next) => {
     // Passing steps to be followed
     const stats = await Posts.aggregate([
       {
@@ -185,13 +144,7 @@ const getPostsStats = async (req, res) => {
         stats,
       },
     });
-  } catch (err) {
-    res.status(400).json({
-      status: "failed",
-      msg: err,
-    });   
-  }
-}
+});
 
 
 module.exports = {
