@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
 
 const postsSchema = mongoose.Schema({
-  user_id: {
+  user: {
     type: mongoose.Schema.Types.ObjectId,
     required: true,
   },
@@ -25,8 +25,14 @@ const postsSchema = mongoose.Schema({
     type: Number,
     default: 0
   }
+}, {
+  toJSON: {virtuals: true},
+  toObject: {virtuals: true}
 });
 
+postsSchema.virtual('duration').get(function() {
+  return Date.now()-this.date
+})
 const Posts = mongoose.model("Posts", postsSchema);
 
 module.exports = Posts;

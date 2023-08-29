@@ -1,12 +1,19 @@
 // import model
 const Posts = require("../models/postsModel");
 
+// import other functions and classes
+const APIFeature = require("../utils/apiFeature")
+
 /******************** API Functions *********************/
 
 /********** Create Post **************/
 const createPost = async (req, res) => {
   try {
-    const newPost = await Posts.create(req.body);
+    const {user_id} = req.params;
+    const newPost = await Posts.create({
+      user: user_id,
+      ...req.body
+    });
     res.status(201).json({
       status: "success",
       msg: newPost,
@@ -68,6 +75,7 @@ const getTrendPosts = async (req, res) => {
 
     const resultPosts = await trendPosts;
 
+    // send response
     res.status(200).json({
       status: "success",
       results: resultPosts.length,
@@ -87,10 +95,12 @@ const getTrendPosts = async (req, res) => {
 const getUserPosts = async (req, res) => {
   try {
     const { user_id } = req.params;
-    const userPosts = await Posts.find({ user_id: user_id });
+    // find user by id in database
+    const userPosts = await Posts.find({ user: user_id });
+    // send reponse
     res.status(200).json({
       status: "success",
-      results: userdPosts.length,
+      results: userPosts.length,
       data: {
         userPosts,
       },
@@ -107,7 +117,9 @@ const getUserPosts = async (req, res) => {
 const getPost = async (req, res) => {
   try {
     const { post_id } = req.params;
+    // Find post by id in the database
     const post = await Posts.findById(post_id);
+    // send response
     res.status(200).json({
       status: "success",
       data: {
@@ -124,53 +136,21 @@ const getPost = async (req, res) => {
 
 /*********** Get Search Post **************/
 const getSearchPost = async (req, res) => {
-  try {
-    // Build Query
-    // 1. Filtering
-    const queryObj = { ...req.query };
-    const excludeFields = ['page', 'sort', 'limit', 'fields'];
-    excludeFields.forEach(el=> delete queryObj[el]);
-
-    // 2. Advance filtering 
-    let queryStr = JSON.stringify(queryObj);
-    queryStr = queryStr.replace(/\b(gte|gt|lte|lt)\b/g, match => `$${match}`);
-
-    let query = Posts.find(JSON.parse(queryStr));
-    
-    // 3. Sorting 
-    if (req.query.sort){
-      const sortBy = req.query.sort.split(',').join(' ');
-      query = query.sort(sortBy)
-    } else {
-      query = query.sort('-date')
-    }
-
-    // 4. Field limiting 
-    if (req.query.fields){
-      const fields = req.query.fields.split(',').join(' ');
-      query = query.select(fields);
-    } else {
-      query = query.select('-__v')
-    }
-
-    // Pagination 
-    const page = req.query.page*1||1;
-    const limit = req.query.limit*1||100;
-    const skip = (page-1)*limit;
-
-    query = query.skip(skip).limit(limit);
-
-    if (req.query.page) {
-      const numPosts = await Posts.countDocuments()
-      if (skip >= numPosts) throw new Error('This page does not exist')
-    }
-    
+  try {    
     // Execute query
-    const post = await query 
+    const features = new APIFeature(Posts.find(), req.query)
+      .filter()
+      .sort()
+      .limitFields()
+      .pagination() 
+
+    const posts = await features.query;
+
+    // Send Response
     res.status(200).json({
       status: "success",
       data: {
-        post,
+        posts,
       },
     });
   } catch (err) {
@@ -181,6 +161,39 @@ const getSearchPost = async (req, res) => {
   }
 };
 
+/*********** Aggregation Pipeline **************/
+const getPostsStats = async (req, res) => {
+  try {
+    // Passing steps to be followed
+    const stats = await Posts.aggregate([
+      {
+        $match: { likes: {$gte: 500}}
+      },
+      {
+        $group: {
+          _id: null,
+          maxLikes: { $max: "$likes" },
+          minLikes: { $min: "$likes" },
+        }
+      }
+    ])
+
+    // send response
+    res.status(200).json({
+      status: "success",
+      data: {
+        stats,
+      },
+    });
+  } catch (err) {
+    res.status(400).json({
+      status: "failed",
+      msg: err,
+    });   
+  }
+}
+
+
 module.exports = {
   createPost,
   updatePost,
@@ -189,4 +202,5 @@ module.exports = {
   getUserPosts,
   getPost,
   getSearchPost,
+  getPostsStats,
 };
