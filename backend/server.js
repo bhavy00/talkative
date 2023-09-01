@@ -2,6 +2,12 @@ const app = require('./app')
 const dotenv = require('dotenv')
 const connectDB = require('./db/connect')
 
+process.on('uncaughtException', err => {
+    console.log('UNCAUGHT EXCEPTION! Shutting down...');
+    console.log(err.name, err.message);
+    process.exit(1);
+})
+
 dotenv.config({ path: "./config/config.env" });
 
 const db = process.env.DATABASE.replace(
@@ -11,15 +17,19 @@ const db = process.env.DATABASE.replace(
 
 const PORT = process.env.PORT || 5000
 
-const start = async () => {
-    try {
-        await connectDB(db);
-        app.listen(PORT, ()=>{
-            console.log(`Listening on ${PORT}...`);
-        })
-    } catch (error) {
-        console.log(error);
-    }
+const server = async () => {
+    await connectDB(db);
+    app.listen(PORT, ()=>{
+        console.log(`Listening on ${PORT}...`);
+    })
 }
 
-start();
+server();
+
+process.on('unhandledRejection', err => {
+    console.log(err.name, err.message);
+    console.log('UNHANDLED REJECTION! Shutting down...');
+    server.close(() => {
+        process.exit(1);
+    });
+});
