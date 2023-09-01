@@ -25,7 +25,7 @@ app.all('*', (req, res, next) => {
     err.statusCode = 404
     err.status = 'fail'
 
-    next(AppError(err));
+    next(new AppError(err));
 })
 
 app.use(globalErrorHandler)

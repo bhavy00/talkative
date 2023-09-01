@@ -12,7 +12,7 @@ const sendErrorDev = (err, res) => {
     // Programming or other unkown error: don't leak error details
     } else {
         // 1. log error
-        console.error('Error', err);
+        console.error('Error\n', err);
 
         // 2. send generic message
         res.status(500).json({
