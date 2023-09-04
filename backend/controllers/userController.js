@@ -1,26 +1,21 @@
 // import model 
 const User = require('../models/userModel');
+const catchAsync = require('../utils/catchAsync');
 
 /******************** API Functions *********************/ 
 
-/********** Create User **************/
-const createUser = async (req, res) => {
-    try {
-        const newUser = await User.create(req.body);
-        res.status(201).json({
-            status: "success",
-            msg: newUser
-        });
-    } catch (err) {
-        res.status(400).json({
-            status: "failed",
-            msg: err
-        })
-    }
+const getAllUser = catchAsync(async(req,res,next)=>{
+    const users = await User.find();
 
+    res.status(200).send({
+        status: "success",
+        result: users.length,
+        data: {
+            users
+        }
+    })
+})
+
+module.exports = {
+    getAllUser
 }
-
-/*********** Update User ************/
-
-
-/*********** Delete User ************/
