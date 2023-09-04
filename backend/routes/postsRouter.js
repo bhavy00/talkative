@@ -1,5 +1,6 @@
 const express = require('express');
 const postsController = require('../controllers/postsController');
+const authController = require('../controllers/authController');
 
 const router = express.Router();
 
@@ -18,7 +19,7 @@ router
 
 router  
     .route('/user/:user_id')
-    .get(postsController.getUserPosts)
-    .post(postsController.createPost)
+    .get(authController.protect, postsController.getUserPosts)
+    .post(authController.protect, postsController.createPost)
 
 module.exports = router;
